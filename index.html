@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🫁 動物の呼吸・消化と吸収クイズ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@400;700&family=Noto+Sans+JP:wght@400;700;900&display=swap');
+
+:root {
+  --primary: #c05a3e;
+  --primary-light: #e08a6b;
+  --primary-dark: #8c3a24;
+  --accent: #8a1e5a;
+  --gold: #c8a000;
+  --gold-dark: #8a6e00;
+  --parchment: #fdf8ed;
+  --parchment2: #f0e4c0;
+  --ink: #1e150a;
+  --success: #2e7d32;
+  --danger: #c62828;
+  --shadow: 0 4px 24px rgba(20,79,58,0.25);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: #04110d;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 48px;
+  color: var(--ink);
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 20%, rgba(31,122,90,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 80%, rgba(98,162,140,0.18) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 44px, rgba(98,162,140,0.03) 44px, rgba(98,162,140,0.03) 45px),
+    #04110d;
+  pointer-events: none; z-index: 0;
+}
+
+#hud {
+  position: sticky; top: 0; z-index: 100;
+  width: 100%; max-width: 540px;
+  background: linear-gradient(135deg, #04110d 0%, #082017 100%);
+  border-bottom: 2px solid var(--primary);
+  padding: 10px 16px 8px; display: none;
+}
+.hud-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.hud-level { font-family:'Kaisei Decol',serif; font-size:0.95rem; color:var(--primary-light); font-weight:700; }
+.hud-title-badge { font-size:0.7rem; background:linear-gradient(135deg,var(--primary-dark),var(--primary-light)); color:white; padding:2px 10px; border-radius:999px; font-weight:700; }
+.hud-score-chips { display:flex; gap:8px; }
+.hud-chip { font-size:0.78rem; font-weight:700; padding:2px 10px; border-radius:999px; }
+.hud-chip.ok { background:rgba(46,125,50,0.25); color:#81c784; }
+.hud-chip.ng { background:rgba(198,40,40,0.25); color:#ef9a9a; }
+.exp-bar-wrap { display:flex; align-items:center; gap:8px; }
+.exp-label { font-size:0.7rem; color:var(--primary-light); white-space:nowrap; }
+.exp-bar-bg { flex:1; height:8px; background:rgba(255,255,255,0.1); border-radius:999px; overflow:hidden; }
+.exp-bar-fill { height:100%; background:linear-gradient(90deg,var(--primary),var(--primary-light)); border-radius:999px; transition:width 0.6s cubic-bezier(.4,0,.2,1); }
+
+#levelup-overlay {
+  display:none; position:fixed; inset:0; z-index:999;
+  background:rgba(18,12,2,0.9);
+  align-items:center; justify-content:center; flex-direction:column; text-align:center;
+}
+#levelup-overlay.show { display:flex; animation:fadeIn 0.3s ease; }
+@keyframes fadeIn { from{opacity:0;}to{opacity:1;} }
+.levelup-ring {
+  width:160px; height:160px; border-radius:50%;
+  background:radial-gradient(circle,rgba(160,124,58,0.3) 0%,transparent 70%);
+  display:flex; align-items:center; justify-content:center; margin-bottom:20px;
+  animation:ringPulse 1s ease-in-out infinite;
+}
+@keyframes ringPulse { 0%,100%{box-shadow:0 0 0 0 rgba(160,124,58,0.4);}50%{box-shadow:0 0 0 20px rgba(160,124,58,0);} }
+.levelup-emoji { font-size:5rem; }
+.levelup-text { font-family:'Kaisei Decol',serif; color:var(--primary-light); font-size:2rem; font-weight:700; text-shadow:0 0 20px rgba(160,124,58,0.8); margin-bottom:8px; }
+.levelup-level { font-size:1rem; color:#c49a5a; margin-bottom:12px; }
+.levelup-title { font-size:1.1rem; color:var(--primary-light); background:rgba(160,124,58,0.1); border:1px solid rgba(160,124,58,0.3); padding:8px 24px; border-radius:999px; margin-bottom:24px; }
+.btn-levelup-ok { padding:12px 40px; background:linear-gradient(135deg,var(--primary-dark),var(--primary-light)); color:white; border:none; border-radius:6px; font-size:1rem; font-weight:700; cursor:pointer; font-family:'Noto Sans JP',sans-serif; }
+
+#title-overlay {
+  display:none; position:fixed; inset:0; z-index:998;
+  background:rgba(18,12,2,0.92);
+  align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:24px;
+}
+#title-overlay.show { display:flex; animation:fadeIn 0.4s ease; }
+.title-scroll { background:var(--parchment); border:3px solid var(--primary); border-radius:8px; padding:32px 28px; max-width:320px; width:100%; }
+.title-scroll::before { content:'✦ ✦ ✦'; font-size:0.7rem; color:var(--primary); letter-spacing:6px; display:block; margin-bottom:16px; }
+.title-new { font-size:0.75rem; color:var(--danger); font-weight:700; letter-spacing:0.1em; }
+.title-main { font-family:'Kaisei Decol',serif; font-size:1.8rem; color:var(--ink); margin:8px 0; }
+.title-emoji { font-size:2.5rem; margin:8px 0; }
+.title-desc { font-size:0.85rem; color:#5a3a1a; line-height:1.6; margin-top:8px; }
+.btn-title-ok { margin-top:20px; padding:10px 32px; background:linear-gradient(135deg,var(--primary-dark),var(--primary-light)); color:white; border:none; border-radius:6px; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:'Noto Sans JP',sans-serif; }
+
+#intro-screen { width:100%; display:flex; flex-direction:column; align-items:center; padding:48px 16px 60px; position:relative; z-index:1; }
+.intro-emblem { font-size:5rem; margin-bottom:8px; filter:drop-shadow(0 4px 16px rgba(160,124,58,0.5)); animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);} }
+.intro-title { font-family:'Kaisei Decol',serif; font-size:1.8rem; color:var(--primary-light); text-shadow:0 2px 12px rgba(160,124,58,0.4); margin-bottom:4px; text-align:center; }
+.intro-sub { color:#62a28c; font-size:0.85rem; margin-bottom:28px; text-align:center; }
+.intro-card { width:100%; max-width:340px; background:var(--parchment); border:2px solid var(--primary); border-radius:8px; padding:20px; margin-bottom:28px; text-align:center; }
+.intro-tags { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:16px; }
+.itag { padding:4px 12px; border-radius:999px; font-size:0.78rem; font-weight:700; background:rgba(92,74,30,0.12); color:var(--primary-dark); border:1px solid rgba(92,74,30,0.25); }
+.intro-desc { font-size:0.88rem; color:#5a3a1a; line-height:1.8; }
+.btn-start { padding:16px 48px; background:linear-gradient(135deg,var(--primary-dark),var(--primary-light)); color:white; border:none; border-radius:8px; font-family:'Kaisei Decol',serif; font-size:1.2rem; font-weight:700; cursor:pointer; box-shadow:0 4px 20px rgba(160,124,58,0.4); transition:all 0.2s; letter-spacing:0.05em; }
+.btn-start:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(160,124,58,0.5); }
+
+#quiz-screen { display:none; width:100%; max-width:540px; padding:16px 0 0; position:relative; z-index:1; }
+.section-badge { display:inline-block; background:linear-gradient(135deg,var(--primary-dark),var(--primary-light)); color:white; font-size:0.7rem; font-weight:700; padding:3px 14px; border-radius:999px; margin-bottom:8px; letter-spacing:0.05em; }
+.q-card { background:var(--parchment); border-radius:6px; padding:28px 20px 20px; box-shadow:var(--shadow),inset 0 0 0 1px rgba(92,74,30,0.18); border-top:3px solid var(--primary); margin:0 16px; animation:cardIn 0.35s cubic-bezier(.4,0,.2,1); }
+@keyframes cardIn { from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);} }
+.q-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.q-num { font-size:0.75rem; color:var(--primary); }
+.q-type-badge { font-size:0.68rem; padding:2px 8px; border-radius:999px; font-weight:700; }
+.q-type-badge.choice { background:#fff8e1; color:var(--gold-dark); }
+.q-type-badge.text   { background:var(--parchment2); color:var(--primary-dark); }
+.q-text { font-family:'Kaisei Decol',serif; font-size:1.05rem; line-height:1.7; color:var(--ink); margin-bottom:18px; }
+
+.choices { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.choice-btn { width:100%; padding:12px 16px; border:2px solid rgba(92,74,30,0.2); border-radius:6px; background:white; font-size:0.93rem; text-align:left; cursor:pointer; transition:all 0.2s; font-family:'Noto Sans JP',sans-serif; color:var(--ink); position:relative; }
+.choice-btn:hover:not(:disabled) { border-color:var(--primary); background:var(--parchment2); transform:translateX(4px); }
+.choice-btn.correct  { border-color:var(--success); background:#e8f5e9; color:#1b5e20; font-weight:700; }
+.choice-btn.wrong    { border-color:var(--danger);  background:#ffebee; color:#b71c1c; font-weight:700; }
+.choice-btn.show-ans { border-color:var(--success); background:#e8f5e9; color:#1b5e20; }
+.choice-btn:disabled { cursor:default; }
+.c-icon { position:absolute; right:12px; top:50%; transform:translateY(-50%); }
+
+.text-input-area { margin-bottom:10px; }
+.text-input-area input { width:100%; padding:12px 14px; border:2px solid rgba(92,74,30,0.22); border-radius:6px; font-size:1rem; font-family:'Noto Sans JP',sans-serif; outline:none; background:white; transition:border-color 0.2s; color:var(--ink); }
+.text-input-area input:focus { border-color:var(--primary); }
+.text-input-area input.correct { border-color:var(--success); background:#e8f5e9; }
+.text-input-area input.wrong   { border-color:var(--danger);  background:#ffebee; }
+
+.hint-row { margin:6px 0; }
+.hint-btn { display:inline-flex; align-items:center; gap:4px; padding:5px 14px; background:rgba(200,160,0,0.1); border:1.5px dashed var(--gold-dark); border-radius:999px; font-size:0.78rem; color:#7a6000; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-weight:700; transition:background 0.2s; }
+.hint-btn:hover { background:rgba(200,160,0,0.2); }
+.hint-btn:disabled { opacity:0.5; cursor:default; }
+.hint-box { display:none; margin-top:6px; padding:8px 12px; background:rgba(200,160,0,0.08); border-left:3px solid var(--gold-dark); border-radius:4px; font-size:0.8rem; color:#7a6000; }
+.hint-box.show { display:block; animation:slideIn 0.2s ease; }
+
+.feedback { display:none; padding:12px 14px; border-radius:6px; margin-bottom:12px; font-size:0.88rem; line-height:1.65; animation:slideIn 0.3s ease; }
+@keyframes slideIn { from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
+.feedback.correct { background:#e8f5e9; color:#1b5e20; border-left:4px solid var(--success); }
+.feedback.wrong   { background:#ffebee; color:#b71c1c; border-left:4px solid var(--danger); }
+.feedback.show { display:block; }
+.fb-title { font-weight:700; font-size:0.95rem; margin-bottom:4px; }
+.fb-exp { font-size:0.8rem; margin-top:4px; }
+.fb-explain { font-size:0.83rem; color:#555; margin-top:6px; line-height:1.6; }
+
+.btn { width:100%; padding:13px; border:none; border-radius:6px; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:'Noto Sans JP',sans-serif; transition:all 0.2s; }
+.btn-primary { background:linear-gradient(135deg,var(--primary-dark),var(--primary-light)); color:white; box-shadow:0 3px 12px rgba(160,124,58,0.3); }
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(160,124,58,0.4); }
+.btn-secondary { background:linear-gradient(135deg,#5d1a1a,var(--accent)); color:white; }
+.btn:disabled { opacity:0.6; cursor:default; transform:none !important; }
+
+#result-screen { display:none; width:100%; max-width:540px; padding:40px 16px 60px; position:relative; z-index:1; text-align:center; }
+.result-emblem { font-size:4rem; margin-bottom:12px; }
+.result-title { font-family:'Kaisei Decol',serif; font-size:1.5rem; color:var(--primary-light); margin-bottom:4px; }
+.result-title-display { display:inline-block; background:linear-gradient(135deg,var(--primary-dark),var(--primary-light)); color:white; font-size:0.9rem; font-weight:700; padding:4px 16px; border-radius:999px; margin-bottom:16px; }
+.result-card { background:var(--parchment); border:2px solid var(--primary); border-radius:8px; padding:20px; margin-bottom:16px; }
+.result-score { font-family:'Kaisei Decol',serif; font-size:3rem; color:var(--ink); font-weight:700; }
+.result-score span { font-size:1rem; color:var(--primary); font-weight:400; }
+.result-level-row { display:flex; align-items:center; justify-content:center; gap:16px; margin:12px 0; flex-wrap:wrap; }
+.rl-item { text-align:center; }
+.rl-label { font-size:0.7rem; color:var(--primary); }
+.rl-val { font-size:1.2rem; font-weight:700; color:var(--ink); }
+.result-msg { font-size:0.9rem; color:#5a3a1a; line-height:1.7; margin:12px 0; }
+.result-table { width:100%; border-collapse:collapse; font-size:0.82rem; text-align:left; margin-top:12px; }
+.result-table th { background:rgba(92,74,30,0.1); padding:7px 10px; color:#5a3a1a; font-weight:700; }
+.result-table td { padding:7px 10px; border-bottom:1px solid rgba(92,74,30,0.1); }
+.result-table .ok  { color:var(--success); font-weight:700; }
+.result-table .bad { color:var(--danger);  font-weight:700; }
+.title-collection { background:var(--parchment); border:2px solid var(--primary); border-radius:8px; padding:16px; margin-bottom:16px; }
+.tc-header { font-family:'Kaisei Decol',serif; font-size:1rem; color:var(--ink); margin-bottom:10px; }
+.tc-grid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+.tc-badge { padding:4px 12px; border-radius:999px; font-size:0.78rem; font-weight:700; }
+.tc-badge.earned { background:linear-gradient(135deg,var(--primary-dark),var(--primary-light)); color:white; }
+.tc-badge.locked { background:rgba(92,74,30,0.1); color:#b09060; border:1px dashed rgba(92,74,30,0.25); }
+.stars { font-size:1.8rem; letter-spacing:4px; margin:8px 0; }
+.result-btns { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+
+/* ===== 称号獲得 派手演出 ===== */
+#title-overlay.show .title-scroll{ animation:titlePop .6s cubic-bezier(.34,1.7,.5,1) both, titleGlow2 1.4s .6s ease-in-out infinite; box-shadow:0 0 0 4px rgba(255,215,0,.3),0 14px 50px rgba(0,0,0,.5); }
+@keyframes titlePop{0%{transform:scale(.3) rotate(-10deg);opacity:0;}60%{transform:scale(1.08) rotate(3deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
+@keyframes titleGlow2{0%,100%{box-shadow:0 0 0 4px rgba(255,215,0,.3),0 14px 50px rgba(0,0,0,.5);}50%{box-shadow:0 0 0 12px rgba(255,215,0,.55),0 14px 64px rgba(255,180,0,.55);}}
+#title-overlay.show .title-emoji{ animation:titleEmojiPop .8s ease both; }
+@keyframes titleEmojiPop{0%{transform:scale(0) rotate(-180deg);}70%{transform:scale(1.35) rotate(12deg);}100%{transform:scale(1) rotate(0);}}
+.tap-hint{ font-size:.7rem; opacity:.55; margin-top:10px; }
+.confetti-piece{ position:fixed; top:-12vh; width:10px; height:14px; border-radius:2px; opacity:.95; z-index:1200; pointer-events:none; animation:confettiFall linear forwards; }
+@keyframes confettiFall{ to{ transform:translateY(120vh) rotate(720deg); } }
+.title-collection{display:none !important;} #title-overlay{display:none !important;}
+.intro-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+.itag{flex:0 1 calc(50% - 3px);box-sizing:border-box;text-align:center;}
+.itag-full{flex-basis:100%;}
+#qa-popup{display:none;position:fixed;inset:0;z-index:1100;background:rgba(5,17,31,.75);align-items:center;justify-content:center;padding:24px;}
+#qa-popup.show{display:flex;}
+.qa-popup-box{background:#fff;border:2px solid var(--primary);border-radius:10px;padding:20px 18px;max-width:420px;width:100%;max-height:80vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.4);}
+.qa-popup-text{font-size:0.9rem;color:var(--ink);line-height:1.7;white-space:pre-wrap;word-break:break-word;text-align:left;}
+.qa-popup-close{margin-top:16px;width:100%;padding:10px;background:linear-gradient(135deg,var(--primary-dark),var(--primary-light));color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;}
+.result-table td.q-cell{cursor:pointer;color:var(--primary-dark);text-decoration:underline dotted;}
+.exp-col-btn{font-size:0.74rem;padding:3px 10px;border:1.5px solid var(--gold-dark);border-radius:999px;background:#fffde7;color:#a07020;cursor:pointer;font-family:inherit;font-weight:700;white-space:nowrap;}
+.itag{word-break:keep-all;overflow-wrap:anywhere;} /* itag-nobreak */
+.itag{white-space:nowrap;overflow:hidden;padding-left:6px;padding-right:6px;} /* itag-oneline */
+.intro-title{margin-bottom:24px !important;} /* intro-sub-removed */
+</style>
+</head>
+<body>
+
+<div id="levelup-overlay">
+  <div class="levelup-ring"><div class="levelup-emoji">🏯</div></div>
+  <div class="levelup-text">LEVEL UP！</div>
+  <div class="levelup-level" id="lu-level">Lv.2 になった！</div>
+  <div class="levelup-title" id="lu-title"></div>
+  <button class="btn-levelup-ok" onclick="closeLevelup()">よし！続けるぞ ▶</button>
+</div>
+
+<div id="title-overlay" onclick="closeTitleOverlay()">
+  <div class="title-scroll" onclick="event.stopPropagation()">
+    <div class="title-new">🎊 称号獲得！</div>
+    <div class="title-emoji" id="to-emoji">🏯</div>
+    <div class="title-main" id="to-title"></div>
+    <div class="title-desc" id="to-desc"></div>
+    <button class="btn-title-ok" onclick="closeTitleOverlay()">受け取る！ ✨</button>
+    <div class="tap-hint">画面をタップでとじる</div>
+  </div>
+</div>
+
+<div id="intro-screen">
+  <div style="height:40px"></div>
+  <div class="intro-emblem">🫁</div>
+  <div class="intro-title">動物の呼吸<br>消化と吸収<br>クイズ</div>
+  <div class="intro-card">
+    <div class="intro-tags">
+      <span class="itag">消化管の順番</span>
+      <span class="itag">消化液と消化酵素</span>
+      <span class="itag">ヨウ素液の反応</span>
+      <span class="itag">たん汁のはたらき</span>
+      <span class="itag">肺のつくり</span>
+      <span class="itag">呼吸運動のしくみ</span>
+    </div>
+    <div class="intro-desc">
+      経験値を手に入れてレベルアップ！<br>
+      めざせ全問正解！
+    </div>
+  </div>
+  <button class="btn-start" onclick="startQuiz()">スタート！ 🚀</button>
+</div>
+
+<div id="quiz-screen">
+  <div id="hud">
+    <div class="hud-top">
+      <div class="hud-level" id="hud-level">🔍 Lv.1 理科の見習い</div>
+      <div class="hud-score-chips">
+        <div class="hud-chip ok">✅ <span id="hud-ok">0</span></div>
+        <div class="hud-chip ng">❌ <span id="hud-ng">0</span></div>
+      </div>
+    </div>
+    <div class="exp-bar-wrap">
+      <div class="exp-label" id="exp-text">EXP 0/50</div>
+      <div class="exp-bar-bg"><div class="exp-bar-fill" id="exp-fill" style="width:0%"></div></div>
+      <div class="hud-title-badge" id="hud-title-badge">理科の見習い</div>
+    </div>
+  </div>
+
+  <div style="height:16px"></div>
+  <div style="padding:0 16px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;">
+        <div id="prog-fill" style="height:100%;background:linear-gradient(90deg,var(--primary-dark),var(--primary-light));border-radius:999px;transition:width 0.5s;width:0%"></div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--primary-light);white-space:nowrap;" id="prog-label">0/20</div>
+    </div>
+  </div>
+
+  <div class="q-card" id="q-card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <span class="section-badge" id="q-section">🫁 動物の呼吸・消化と吸収</span>
+      <div class="q-meta" style="margin-bottom:0;flex:1;">
+        <span class="q-num" id="q-num"></span>
+        <span class="q-type-badge" id="q-type-badge">選択</span>
+      </div>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div id="q-image"></div>
+    <div id="choices-wrap"></div>
+    <div id="text-input-wrap" style="display:none">
+      <div class="text-input-area">
+        <input type="text" id="text-ans" placeholder="答えを入力…" autocomplete="off">
+      </div>
+      <div class="hint-row">
+        <button class="hint-btn" id="hint-btn" onclick="showHint()">💡 ヒントを見る</button>
+        <div class="hint-box" id="hint-box"></div>
+      </div>
+      <button class="btn btn-secondary" id="submit-btn" onclick="submitText()" style="margin-bottom:10px;">答え合わせ ✔</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" style="display:none;">次の問題へ →</button>
+  </div>
+  <div style="height:32px"></div>
+</div>
+
+<div id="result-screen">
+  <div class="result-emblem" id="res-emoji">🏆</div>
+  <div class="result-title">クイズ完了！</div>
+  <div class="stars" id="res-stars">⭐⭐⭐</div>
+  <div class="result-title-display" id="res-title-disp">👑 古墳大王</div>
+  <div class="result-card">
+    <div class="result-score" id="res-score">0<span> / 20問正解</span></div>
+    <div class="result-level-row">
+      <div class="rl-item"><div class="rl-label">最終レベル</div><div class="rl-val" id="res-level">Lv.1</div></div>
+      <div class="rl-item"><div class="rl-label">獲得EXP</div><div class="rl-val" id="res-exp">0</div></div>
+      <div class="rl-item"><div class="rl-label">正答率</div><div class="rl-val" id="res-pct">0%</div></div>
+    </div>
+    <div class="result-msg" id="res-msg"></div>
+  </div>
+  <div class="title-collection">
+    <div class="tc-header">📜 称号コレクション</div>
+    <div class="tc-grid" id="tc-grid"></div>
+  </div>
+  <div class="result-card">
+    <table class="result-table">
+      <thead><tr><th>#</th><th>問題</th><th>結果</th><th>解説</th></tr></thead>
+      <tbody id="res-tbody"></tbody>
+    </table>
+  </div>
+  <div class="result-btns">
+    <button class="btn btn-primary" onclick="restartQuiz()">もう一度やる 🔄</button>
+    <button class="btn btn-secondary" onclick="reviewWrong()" id="review-btn">❌ 間違えた問題だけやる</button>
+  </div>
+</div>
+
+<script>
+const LEVELS = [
+  { lv:1, need:0,   title:'理科の見習い',   emoji:'🔍' },
+  { lv:2, need:30,  title:'観察名人',       emoji:'🌱' },
+  { lv:3, need:80,  title:'実験助手',       emoji:'🧪' },
+  { lv:4, need:150, title:'研究生',         emoji:'📓' },
+  { lv:5, need:250, title:'科学者',         emoji:'🔬' },
+  { lv:6, need:380, title:'博士',           emoji:'🎓' },
+  { lv:7, need:550, title:'理科マスター',   emoji:'🏆' },
+];
+
+const TITLES = [];
+
+let exp=0, currentLevel=1, earnedTitles=[];
+
+function getLevel(e){ let lv=LEVELS[0]; for(const l of LEVELS){ if(e>=l.need) lv=l; } return lv; }
+function addExp(amount){
+  const prev=getLevel(exp); exp+=amount; const next=getLevel(exp); updateHUD();
+  if(next.lv>prev.lv){ showLevelup(next); return true; } return false;
+}
+function updateHUD(){
+  const lv=getLevel(exp); const nextLv=LEVELS.find(l=>l.lv===lv.lv+1);
+  const expInLv=exp-lv.need; const expNeeded=nextLv?nextLv.need-lv.need:999;
+  const pct=nextLv?Math.min((expInLv/expNeeded)*100,100):100;
+  document.getElementById('hud-level').textContent=`${lv.emoji} Lv.${lv.lv} ${lv.title}`;
+  document.getElementById('hud-title-badge').textContent=lv.title;
+  document.getElementById('exp-fill').style.width=pct+'%';
+  document.getElementById('exp-text').textContent=nextLv?`EXP ${expInLv}/${expNeeded}`:'MAX';
+  currentLevel=lv.lv;
+}
+function showLevelup(lv){
+  document.getElementById('lu-level').textContent=`Lv.${lv.lv} になった！`;
+  document.getElementById('lu-title').textContent=`${lv.emoji} 称号「${lv.title}」を獲得！`;
+  document.getElementById('levelup-overlay').classList.add('show');
+}
+function closeLevelup(){ document.getElementById('levelup-overlay').classList.remove('show'); }
+let titleCallback=null;
+function showTitleOverlay(t,cb){
+  document.getElementById('to-emoji').textContent=t.emoji;
+  document.getElementById('to-title').textContent=t.name;
+  document.getElementById('to-desc').textContent=t.desc;
+  document.getElementById('title-overlay').classList.add('show');
+  spawnConfetti();
+  titleCallback=cb||null;
+}
+function spawnConfetti(){
+  const colors=['#ffd700','#ff7043','#42a5f5','#66bb6a','#ab47bc','#ec407a'];
+  for(let i=0;i<28;i++){
+    const c=document.createElement('div'); c.className='confetti-piece';
+    c.style.left=Math.random()*100+'vw';
+    c.style.background=colors[i%colors.length];
+    c.style.animationDuration=(1.2+Math.random()*1.3)+'s';
+    c.style.animationDelay=(Math.random()*0.3)+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),2900);
+  }
+}
+function closeTitleOverlay(){
+  document.getElementById('title-overlay').classList.remove('show');
+  if(titleCallback){ titleCallback(); titleCallback=null; }
+}
+
+const ALL_QUESTIONS = [
+  {"id": 1, "section": "大問1", "type": "choice", "text": "ヒトの消化管は一本の管になっています。食物が通る順に正しくならんでいるものはどれですか。", "choices": ["口 → 食道 → 胃 → 小腸 → 大腸 → 肛門", "口 → 胃 → 食道 → 小腸 → 大腸 → 肛門", "口 → 食道 → 胃 → 大腸 → 小腸 → 肛門", "口 → 食道 → 小腸 → 胃 → 大腸 → 肛門"], "ordered": true, "answer": "口 → 食道 → 胃 → 小腸 → 大腸 → 肛門", "explanation": "口から肛門までつながった一本の管を消化管（しょうかかん）といいます。【受験ポイント】かん臓・たんのう・すい臓は消化液を出す器官ですが、食物そのものは通らないので消化管にはふくまれません。", "exp": 10},
+  {"id": 2, "section": "大問1", "type": "text", "text": "口から出される消化液を何といいますか。ひらがなで答えてもかまいません。", "answers": ["だ液", "だえき", "唾液"], "hint": "口の中で食べ物とまざる液です。", "explanation": "だ液は口の中にあるだ液せんから出される消化液です。食べ物とまざって、消化のいちばん最初のはたらきをします。", "exp": 10},
+  {"id": 3, "section": "大問1", "type": "text", "text": "だ液にふくまれる消化酵素を何といいますか。カタカナで答えなさい。", "answers": ["アミラーゼ", "あみらーぜ"], "hint": "カタカナ5文字です。", "explanation": "だ液にふくまれる消化酵素はアミラーゼです。【受験ポイント】すい臓から出るすい液にもアミラーゼがふくまれています。「アミラーゼ＝でんぷんの担当」と覚えよう。", "exp": 10},
+  {"id": 4, "section": "大問1", "type": "choice", "text": "だ液のアミラーゼは、何を何に分解しますか。", "choices": ["でんぷんを麦芽糖に分解する", "たんぱく質をペプトンに分解する", "脂肪を脂肪酸に分解する", "でんぷんをブドウ糖に分解する"], "answer": "でんぷんを麦芽糖に分解する", "explanation": "アミラーゼはでんぷんを麦芽糖（ばくがとう）に分解します。【受験ポイント】だ液だけではブドウ糖までは分解されません。ここをまちがえやすいので注意。", "exp": 10},
+  {"id": 5, "section": "大問1", "type": "text", "text": "だ液のあと、残ったでんぷんを麦芽糖に分解するすい液は、どの器官から出されますか。", "answers": ["すい臓", "すいぞう", "膵臓"], "hint": "胃の後ろがわにある器官です。", "explanation": "すい液はすい臓（すいぞう）から出され、十二指腸へ送られます。すい液にはアミラーゼのほか、たんぱく質や脂肪を分解する消化酵素もふくまれています。", "exp": 10},
+  {"id": 6, "section": "大問1", "type": "text", "text": "麦芽糖は、最終的にどの器官のかべの消化酵素によってブドウ糖に分解され、吸収されますか。", "answers": ["小腸", "しょうちょう"], "hint": "胃のあとに続く、長い管です。", "explanation": "最後の分解と吸収を行うのは小腸（しょうちょう）です。小腸のかべには柔毛（じゅうもう）という細かい突起があり、ここから栄養が吸収されます。【受験ポイント】「消化の仕上げと吸収＝小腸」と覚えよう。", "exp": 10},
+  {"id": 7, "section": "大問1", "type": "text", "text": "でんぷんが最終的に分解されてできる、吸収される形の糖を何といいますか。", "answers": ["ブドウ糖", "ぶどう糖", "ぶどうとう", "ブドウとう"], "hint": "果物の名前がついた糖です。", "explanation": "でんぷんは「でんぷん→麦芽糖→ブドウ糖」の順に分解され、ブドウ糖の形で吸収されます。", "exp": 10},
+  {"id": 8, "section": "大問1", "type": "choice", "text": "小腸で吸収されたブドウ糖は、何の中に入りこみますか。", "choices": ["毛細血管", "リンパ管", "気管", "たんのう"], "answer": "毛細血管", "explanation": "ブドウ糖やアミノ酸は小腸の柔毛にある毛細血管（もうさいけっかん）に吸収されます。【受験ポイント】脂肪が分解してできた脂肪酸などはリンパ管に入ります。入り口がちがうので要注意。", "exp": 10},
+  {"id": 9, "section": "大問1", "type": "text", "text": "でんぷんがあるかどうかを調べるときに使う液を何といいますか。", "answers": ["ヨウ素液", "ようそ液", "ヨウ素", "ようそえき", "ヨウ素溶液"], "hint": "カタカナ3文字＋「液」です。", "explanation": "でんぷんの検出にはヨウ素液（ヨウそえき）を使います。", "exp": 10},
+  {"id": 10, "section": "大問1", "type": "choice", "text": "ヨウ素液はもともと何色ですか。", "choices": ["茶色", "青紫色", "赤色", "緑色"], "answer": "茶色", "explanation": "ヨウ素液はもともと茶色（うすい茶色）をしています。", "exp": 10},
+  {"id": 11, "section": "大問1", "type": "choice", "text": "ヨウ素液がでんぷんと反応すると、何色に変わりますか。", "choices": ["青紫色", "赤紫色", "緑色", "黒色"], "answer": "青紫色", "explanation": "ヨウ素液はでんぷんと反応すると青紫色（あおむらさきいろ）に変わります。これをヨウ素でんぷん反応といいます。【受験ポイント】「茶色→青紫色」の変化をセットで覚えよう。", "exp": 10},
+  {"id": 12, "section": "大問1", "type": "text", "text": "胃から出される消化液を何といいますか。", "answers": ["胃液", "いえき"], "hint": "器官の名前に「液」をつけた名前です。", "explanation": "胃からは胃液（いえき）が出されます。胃液には強い酸（塩酸）がふくまれ、食べ物を殺菌するはたらきもあります。", "exp": 10},
+  {"id": 13, "section": "大問1", "type": "choice", "text": "胃液にふくまれる消化酵素を何といいますか。", "choices": ["ペプシン", "アミラーゼ", "リパーゼ", "トリプシン"], "answer": "ペプシン", "explanation": "胃液にふくまれる消化酵素はペプシンです。【受験ポイント】アミラーゼ＝でんぷん、ペプシン＝たんぱく質、リパーゼ＝脂肪。3つをセットで覚えよう。", "exp": 10},
+  {"id": 14, "section": "大問1", "type": "choice", "text": "ペプシンは、何を最初に分解しますか。", "choices": ["たんぱく質", "でんぷん", "脂肪", "ブドウ糖"], "answer": "たんぱく質", "explanation": "ペプシンはたんぱく質を最初に分解します。", "exp": 10},
+  {"id": 15, "section": "大問1", "type": "choice", "text": "ペプシンはたんぱく質を何に変えますか。", "choices": ["ペプトン", "ブドウ糖", "脂肪酸", "麦芽糖"], "answer": "ペプトン", "explanation": "ペプシンはたんぱく質をペプトンに変えます。ペプトンはさらに分解され、最後はアミノ酸になって小腸から吸収されます。【受験ポイント】たんぱく質の道すじは「たんぱく質→ペプトン→アミノ酸」です。", "exp": 10},
+  {"id": 16, "section": "大問1", "type": "text", "text": "消化酵素をふくまないのに消化を助ける消化液「たん汁（胆汁）」は、どの器官でつくられますか。", "answers": ["かん臓", "肝臓", "かんぞう"], "hint": "体の中でいちばん大きな器官です。", "explanation": "たん汁はかん臓（肝臓）でつくられます。【受験ポイント】「つくるのはかん臓、ためるのはたんのう」。つくる場所とためる場所がちがうのがポイントです。", "exp": 10},
+  {"id": 17, "section": "大問1", "type": "text", "text": "かん臓でつくられたたん汁は、どの器官にたくわえられますか。", "answers": ["たんのう", "胆のう", "胆嚢", "たんノウ"], "hint": "かん臓の下についている小さなふくろです。", "explanation": "たん汁はたんのう（胆のう）にたくわえられ、必要なときに送り出されます。", "exp": 10},
+  {"id": 18, "section": "大問1", "type": "text", "text": "たんのうにたくわえられたたん汁は、どこに送り出されますか。", "answers": ["十二指腸", "じゅうにしちょう"], "hint": "胃のすぐ後ろにある、小腸の始まりの部分です。", "explanation": "たん汁は十二指腸（じゅうにしちょう）に送り出されます。すい液も同じ十二指腸に出されます。", "exp": 10},
+  {"id": 19, "section": "大問1", "type": "choice", "text": "たん汁は、何を細かくして消化を助けますか。", "choices": ["脂肪", "でんぷん", "たんぱく質", "ブドウ糖"], "answer": "脂肪", "explanation": "たん汁は脂肪を細かいつぶにして、消化酵素のリパーゼがはたらきやすくします。【受験ポイント】たん汁は消化酵素をふくまないのに消化を助ける、という点がよく出題されます。", "exp": 10},
+  {"id": 20, "section": "大問2", "type": "text", "text": "空気を取りこみ、酸素と二酸化炭素を交かんする、胸の中にある左右2つの器官を何といいますか。", "answers": ["肺", "はい"], "hint": "漢字1文字です。", "explanation": "肺（はい）は呼吸をする器官で、胸の中に左右一つずつあります。", "exp": 10},
+  {"id": 21, "section": "大問2", "type": "text", "text": "のどから肺へ空気を送る、1本の太い管を何といいますか。", "answers": ["気管", "きかん"], "hint": "漢字2文字です。", "explanation": "気管（きかん）はのどから胸へのびる空気の通り道で、途中で左右に分かれて気管支（きかんし）になります。", "exp": 10},
+  {"id": 22, "section": "大問2", "type": "text", "text": "肺の下にあり、上下に動いて呼吸運動を助ける膜を何といいますか。", "answers": ["横隔膜", "おうかくまく"], "hint": "「おうかく…」と読みます。", "explanation": "横隔膜（おうかくまく）は肺の下にある筋肉の膜で、上下に動くことで息を吸ったりはいたりするのを助けます。", "exp": 10},
+  {"id": 23, "section": "大問2", "type": "text", "text": "肺の中にある、数億個もの小さなふくろを何といいますか。", "answers": ["肺胞", "はいほう"], "hint": "「はい…」と読む漢字2文字です。", "explanation": "肺胞（はいほう）は肺の中にある小さなふくろで、ここで酸素と二酸化炭素が交かんされます。", "exp": 10},
+  {"id": 24, "section": "大問2", "type": "choice", "text": "肺が数億個もの小さなふくろ（肺胞）に分かれているのはなぜですか。", "choices": ["表面積を大きくすることで、効率良く気体を交かんできるから", "空気をたくさんためておくことができるから", "肺を軽くして体の重さを減らすことができるから", "肺がやぶれにくく、じょうぶになるから"], "answer": "表面積を大きくすることで、効率良く気体を交かんできるから", "explanation": "小さなふくろに分かれていると、空気とふれる表面積がとても大きくなり、効率よく酸素と二酸化炭素を交かんできます。【受験ポイント】「細かく分かれている＝表面積を大きくするため」は、小腸の柔毛（じゅうもう）でも同じ考え方です。セットで覚えよう。", "exp": 10},
+  {"id": 25, "section": "大問2", "type": "choice", "text": "吸う息にふくまれる酸素の割合はおよそ何％ですか。", "choices": ["21％", "7％", "17％", "31％"], "answer": "21％", "explanation": "空気中の酸素はおよそ21％です。吸う息の酸素もおよそ21％になります。", "exp": 10},
+  {"id": 26, "section": "大問2", "type": "choice", "text": "はく息にふくまれる酸素の割合はおよそ何％ですか。", "choices": ["17％", "7％", "21％", "31％"], "answer": "17％", "explanation": "はく息の酸素はおよそ17％です。【受験ポイント】はく息にも酸素はたくさん残っています（21％→17％）。「酸素が全部なくなる」わけではありません。だから人工呼吸ができるのです。", "exp": 10},
+  {"id": 27, "section": "大問2", "type": "choice", "text": "息を吸うときの、ろっ骨と横隔膜の動きとして正しいものはどれですか。", "choices": ["ろっ骨は上がり、横隔膜は下がる", "ろっ骨は下がり、横隔膜は上がる", "ろっ骨も横隔膜も上がる", "ろっ骨も横隔膜も下がる"], "answer": "ろっ骨は上がり、横隔膜は下がる", "explanation": "息を吸うときは、ろっ骨が上がり横隔膜が下がることで胸の中が広がり、空気が入ってきます。【受験ポイント】はくときはその逆で、ろっ骨が下がり横隔膜が上がります。「吸う＝広がる」とイメージしよう。", "exp": 10},
+  {"id": 28, "section": "大問2", "type": "choice", "text": "ペットボトルとゴム風船・ゴム膜でつくった呼吸運動の模型で、ゴム膜は体の何にあたりますか。", "choices": ["横隔膜", "肺", "気管", "ろっ骨"], "answer": "横隔膜", "explanation": "模型の下についているゴム膜が横隔膜、中のゴム風船が肺、ガラス管が気管にあたります。", "exp": 10},
+  {"id": 29, "section": "大問2", "type": "choice", "text": "呼吸運動の模型で、息を吸うようすを表すには、ゴム膜をどうすればよいですか。", "choices": ["下げる", "上げる", "横に引っぱる", "動かさない"], "answer": "下げる", "explanation": "ゴム膜を下げると容器の中が広がり、ゴム風船（肺）がふくらみます。これが息を吸うようすです。【受験ポイント】実物の横隔膜も、息を吸うときは下がります。模型と体の動きは同じです。", "exp": 10}
+];
+
+// 前の問題の答えが次の問題文に出てくる問題などは、まとめて決まった順番で出す（まとまり同士・その他はランダム）
+const ORDER_GROUPS = [];
+function orderQuestions(list){
+  const byId={}; list.forEach(q=>byId[q.id]=q);
+  const used=new Set(); const units=[];
+  ORDER_GROUPS.forEach(g=>{const u=g.map(id=>byId[id]).filter(Boolean); u.forEach(q=>used.add(q.id)); if(u.length) units.push(u);});
+  list.forEach(q=>{ if(!used.has(q.id)) units.push([q]); });
+  for(let i=units.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [units[i],units[j]]=[units[j],units[i]];}
+  return units.flat();
+}
+
+
+let questions=[], currentIndex=0, correctCount=0, wrongCount=0, answered=false, results=[];
+
+function startQuiz(questionSet){
+  const isReview=!!questionSet;
+  questions=questionSet||[...ALL_QUESTIONS];
+  currentIndex=0; correctCount=0; wrongCount=0; results=[]; answered=false; exp=0;
+  if(!isReview) earnedTitles=[];
+  document.getElementById('intro-screen').style.display='none';
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('quiz-screen').style.display='block';
+  document.getElementById('hud').style.display='block';
+  updateHUD(); renderQuestion();
+  /* 開始時の称号演出は廃止（称号は5割/8割/全問で獲得） */
+}
+
+function renderQuestion(){
+  const q=questions[currentIndex];
+  answered=false;
+  const card=document.getElementById('q-card');
+  card.style.animation='none'; void card.offsetWidth; card.style.animation='';
+  document.getElementById('q-section').textContent='🫁 動物の呼吸・消化と吸収';
+  document.getElementById('q-num').textContent=`${currentIndex+1}問目 ／ ${questions.length}問`;
+  document.getElementById('q-text').textContent=q.text;
+  document.getElementById('q-image').innerHTML = q.qImg ? '<img src="'+q.qImg+'" alt="" style="max-width:100%;max-height:240px;border-radius:8px;margin:10px auto 0;display:block;border:1px solid rgba(74,38,112,0.2);">' : '';
+  const tb=document.getElementById('q-type-badge');
+  if(q.type==='choice'){ tb.textContent='選択'; tb.className='q-type-badge choice'; }
+  else{ tb.textContent='記述'; tb.className='q-type-badge text'; }
+  const fb=document.getElementById('feedback');
+  fb.className='feedback'; fb.innerHTML='';
+  document.getElementById('next-btn').style.display='none';
+  const choicesWrap=document.getElementById('choices-wrap');
+  const textWrap=document.getElementById('text-input-wrap');
+  choicesWrap.innerHTML=''; textWrap.style.display='none';
+  if(q.type==='choice'){
+    renderChoices(q,choicesWrap);
+  } else {
+    textWrap.style.display='block';
+    const input=document.getElementById('text-ans');
+    input.value=''; input.className=''; input.disabled=false;
+    const hintBtn=document.getElementById('hint-btn');
+    const hintBox=document.getElementById('hint-box');
+    hintBox.textContent=''; hintBox.classList.remove('show');
+    if(q.hint){ hintBtn.style.display=''; hintBtn.disabled=false; hintBtn.textContent='💡 ヒントを見る'; }
+    else{ hintBtn.style.display='none'; }
+    document.getElementById('submit-btn').disabled=false;
+    setTimeout(()=>input.focus(),100);
+    input.onkeydown=e=>{ if(e.key==='Enter') submitText(); };
+  }
+  updateProgress();
+}
+
+function renderChoices(q,wrap){
+  const div=document.createElement('div');
+  div.className='choices';
+  const list=q.ordered?[...q.choices]:[...q.choices].sort(()=>Math.random()-0.5);
+  list.forEach(ch=>{
+    const btn=document.createElement('button');
+    btn.className='choice-btn'; btn.textContent=ch;
+    btn.onclick=()=>selectChoice(btn,ch,q);
+    div.appendChild(btn);
+  });
+  wrap.appendChild(div);
+}
+
+function selectChoice(btn,choice,q){
+  if(answered) return;
+  answered=true;
+  const isCorrect=(choice===q.answer);
+  document.querySelectorAll('.choice-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===q.answer){ b.classList.add('show-ans'); b.innerHTML+=`<span class="c-icon">✅</span>`; }
+  });
+  if(!isCorrect){ btn.classList.remove('show-ans'); btn.classList.add('wrong'); btn.innerHTML=btn.textContent.replace('<span class="c-icon">✅</span>','')+`<span class="c-icon">❌</span>`; }
+  else{ btn.classList.add('correct'); }
+  processAnswer(isCorrect,choice,q);
+}
+
+function showHint(){
+  const q=questions[currentIndex];
+  const hb=document.getElementById('hint-box');
+  hb.textContent=`💡 ヒント：${q.hint}`; hb.classList.add('show');
+  document.getElementById('hint-btn').disabled=true;
+  document.getElementById('hint-btn').textContent='💡 ヒントを見た';
+}
+
+function submitText(){
+  if(answered) return;
+  const q=questions[currentIndex];
+  const input=document.getElementById('text-ans');
+  const userAns=input.value.trim();
+  if(!userAns){ input.style.borderColor='orange'; setTimeout(()=>input.style.borderColor='',600); return; }
+  answered=true;
+  document.getElementById('submit-btn').disabled=true;
+  input.disabled=true;
+  const norm=s=>s.replace(/\s|　/g,'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[Ａ-Ｚａ-ｚ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).toLowerCase();
+  const correctList=Array.isArray(q.answers)?q.answers:[q.answer];
+  const isCorrect=correctList.some(a=>norm(userAns)===norm(a));
+  input.className=isCorrect?'correct':'wrong';
+  processAnswer(isCorrect,userAns,q);
+}
+
+function processAnswer(isCorrect,userAns,q){
+  if(isCorrect){ correctCount++; document.getElementById('hud-ok').textContent=correctCount; }
+  else{ wrongCount++; document.getElementById('hud-ng').textContent=wrongCount; }
+  results.push({q,isCorrect,userAnswer:userAns});
+  const gained=isCorrect?q.exp:Math.floor(q.exp*0.2);
+  addExp(gained);
+  showFeedback(isCorrect,q,gained);
+  document.getElementById('next-btn').style.display='block';
+}
+
+function showFeedback(isCorrect,q,gained){
+  const fb=document.getElementById('feedback');
+  fb.className='feedback '+(isCorrect?'correct':'wrong')+' show';
+  const correctList=Array.isArray(q.answers)?q.answers:[q.answer];
+  const answerDisp=correctList[0];
+  fb.innerHTML=`
+    <div class="fb-title">${isCorrect?'🎉 正解！':`❌ 不正解… 正解は「${answerDisp}」`}</div>
+    <div class="fb-exp">${isCorrect?`✨ +${gained} EXP 獲得！`:`💧 +${gained} EXP（参加ポイント）`}</div>
+    <div class="fb-explain">📖 ${q.explanation}</div>
+  `;
+}
+
+function nextQuestion(){
+  if(currentIndex+1>=questions.length) showResult();
+  else{ currentIndex++; renderQuestion(); }
+}
+
+function updateProgress(){
+  const pct=(currentIndex/questions.length)*100;
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=`${currentIndex}/${questions.length}`;
+}
+
+function showResult(){
+  document.getElementById('quiz-screen').style.display='none';
+  document.getElementById('hud').style.display='none';
+  document.getElementById('result-screen').style.display='block';
+  const total=questions.length; const pct=correctCount/total; const lv=getLevel(exp);
+  let emoji,stars,msg;
+  if(pct>=1.0)      { emoji='🏆'; stars='⭐⭐⭐'; msg='全問正解！完璧だ！「'+lv.title+'」になった！✨'; }
+  else if(pct>=0.8) { emoji='😄'; stars='⭐⭐';   msg='よくできた！あと少しで満点。間違えた問題を確認しよう！'; }
+  else if(pct>=0.5) { emoji='😊'; stars='⭐';     msg='がんばった！半分以上正解。復習してもう一度挑戦！'; }
+  else              { emoji='💪'; stars='';        msg='まだ覚えていないところがあるね。一つずつ確認しよう！'; }
+  document.getElementById('res-emoji').textContent=emoji;
+  document.getElementById('res-stars').textContent=stars;
+  document.getElementById('res-score').innerHTML=`${correctCount}<span> / ${total}問正解</span>`;
+  document.getElementById('res-msg').textContent=msg;
+  document.getElementById('res-level').textContent=`Lv.${lv.lv}`;
+  document.getElementById('res-exp').textContent=exp;
+  document.getElementById('res-pct').textContent=Math.round(pct*100)+'%';
+
+  const newTitles=TITLES.filter(t=>t.id!=='start'&&!earnedTitles.includes(t.id)&&t.cond(results.map(r=>r.isCorrect),correctCount,wrongCount));
+  newTitles.forEach(t=>earnedTitles.push(t.id));
+  const topTitle=[...TITLES].reverse().find(t=>earnedTitles.includes(t.id));
+  document.getElementById('res-title-disp').textContent=`${lv.emoji} ${lv.title}`;
+
+  const grid=document.getElementById('tc-grid');
+  grid.innerHTML='';
+  TITLES.forEach(t=>{
+    const span=document.createElement('span');
+    span.className='tc-badge '+(earnedTitles.includes(t.id)?'earned':'locked');
+    span.textContent=earnedTitles.includes(t.id)?`${t.emoji} ${t.name}`:'🔒 ???';
+    span.title=earnedTitles.includes(t.id)?t.desc:'未獲得';
+    grid.appendChild(span);
+  });
+
+  const tbody=document.getElementById('res-tbody');
+  tbody.innerHTML='';
+  results.forEach((r,i)=>{
+    const shortQ=r.q.text.length>20?r.q.text.slice(0,20)+'…':r.q.text;
+    const correctDisp=Array.isArray(r.q.answers)?r.q.answers[0]:r.q.answer;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td class="q-cell"></td><td class="${r.isCorrect?'ok':'bad'}">${r.isCorrect?'✅ 正解':'❌ '+correctDisp}</td><td class="exp-cell"></td>`;
+    const qCell=tr.querySelector('.q-cell');
+    qCell.textContent=shortQ;
+    qCell.onclick=()=>openQaPopup(r.q.text, r.q.qImg||'');
+    if(r.q.explanation){
+      const correctList=Array.isArray(r.q.answers)?r.q.answers.join(' / '):r.q.answer;
+      const b=document.createElement('button'); b.className='exp-col-btn'; b.textContent='解説';
+      b.onclick=()=>openQaPopup('正解：'+correctList+'\n\n'+r.q.explanation, r.q.expImg||'');
+      tr.querySelector('.exp-cell').appendChild(b);
+    }
+    tbody.appendChild(tr);
+  });
+  document.getElementById('review-btn').style.display=results.some(r=>!r.isCorrect)?'block':'none';
+  if(newTitles.length>0){ setTimeout(()=>{ showTitleOverlay(newTitles[newTitles.length-1]); },800); }
+}
+
+function toggleExp(btn){
+  const expTr=btn._expTr;
+  const isShown=expTr.style.display!=='none';
+  expTr.style.display=isShown?'none':'table-row';
+  btn.textContent=isShown?'💡 解説を見る':'💡 解説を閉じる';
+}
+
+function restartQuiz(){
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('intro-screen').style.display='flex';
+  document.getElementById('intro-screen').style.flexDirection='column';
+  document.getElementById('intro-screen').style.alignItems='center';
+}
+
+function reviewWrong(){
+  const wrong=results.filter(r=>!r.isCorrect).map(r=>r.q);
+  if(wrong.length>0) startQuiz(wrong);
+}
+</script>
+<div id="qa-popup" onclick="closeQaPopup()">
+  <div class="qa-popup-box" onclick="event.stopPropagation()">
+    <div class="qa-popup-text" id="qa-popup-text"></div>
+    <button class="qa-popup-close" onclick="closeQaPopup()">✕ 閉じる</button>
+  </div>
+</div>
+<script>
+function openQaPopup(t,img){ var b=document.getElementById('qa-popup-text'); b.textContent=t; if(img){ var im=document.createElement('img'); im.src=img; im.style.cssText='width:100%;border-radius:6px;margin-top:10px;'; b.appendChild(im); } document.getElementById('qa-popup').classList.add('show'); }
+function closeQaPopup(){ document.getElementById('qa-popup').classList.remove('show'); }
+</script>
+<script>/* itag-fit */(function(){function fit(){document.querySelectorAll('.itag').forEach(function(e){e.style.fontSize='';var s=parseFloat(getComputedStyle(e).fontSize);while(e.scrollWidth>e.clientWidth&&s>8){s-=0.5;e.style.fontSize=s+'px';}});}window.addEventListener('load',fit);window.addEventListener('resize',fit);if(document.fonts)document.fonts.ready.then(fit);})();</script>
+<style>/* home-btn */
+#home-btn{position:fixed;top:12px;left:12px;z-index:300;display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.3);color:#fff;font-family:'Noto Sans JP',sans-serif;font-size:.8rem;font-weight:700;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.25);transition:background .2s,transform .2s;}
+#home-btn:hover{background:rgba(255,255,255,.26);transform:translateY(-1px);}
+#home-btn[hidden]{display:none!important;}
+</style>
+<a id="home-btn" href="https://inakichi1744.github.io/00_quiz/" aria-label="クイズ一覧へ戻る">🏠 一覧へ</a>
+<script>/* home-btn */(function(){var b=document.getElementById('home-btn');function u(){var q=document.getElementById('quiz-screen');var s=q?getComputedStyle(q).display:'none';b.hidden=(s!=='none');}setInterval(u,300);u();})();</script>
+</body>
+</html>
